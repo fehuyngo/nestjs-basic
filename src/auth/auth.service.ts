@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
@@ -40,7 +40,7 @@ export class AuthService {
     const refresh_token = this.createRefreshToken(payload);
 
     //update user with refresh token
-    await this.usersService.updateUserToke(refresh_token, _id);
+    await this.usersService.updateUserToken(refresh_token, _id);
 
     //set refresh_token as cookies
     response.cookie('refresh_token', refresh_token, {
@@ -75,5 +75,58 @@ export class AuthService {
         ms(this.configService.get<string>('JWT_REFRESH_EXPIRE')) / 1000,
     });
     return refresh_token;
+  };
+
+  processNewToken = async (refreshToken: string, response: Response) => {
+    try {
+      this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+      });
+
+      const user = await this.usersService.findUserByToken(refreshToken);
+      if (user) {
+        //update refresh_token
+        const { _id, name, email, role } = user;
+        const payload = {
+          sub: 'token refresh',
+          iss: 'from server',
+          _id,
+          name,
+          email,
+          role,
+        };
+
+        const refresh_token = this.createRefreshToken(payload);
+
+        //update user with refresh token
+        await this.usersService.updateUserToken(refresh_token, _id.toString());
+
+        //set refresh_token as cookies
+        response.clearCookie('refresh_token');
+
+        response.cookie('refresh_token', refresh_token, {
+          httpOnly: true,
+          maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRE')),
+        });
+
+        return {
+          access_token: this.jwtService.sign(payload),
+          user: {
+            _id,
+            name,
+            email,
+            role,
+          },
+        };
+      } else {
+        throw new BadRequestException(
+          `Refresh token không hợp lệ. Vui lòng login.`,
+        );
+      }
+    } catch (error) {
+      throw new BadRequestException(
+        `Refresh token không hợp lệ. Vui lòng login.`,
+      );
+    }
   };
 }
