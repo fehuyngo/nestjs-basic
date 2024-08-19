@@ -29,6 +29,7 @@ export class JobsController {
   }
 
   @Get()
+  @Public()
   @ResponseMessage('Fetch jobs with paginate')
   findAll(
     @Query('current') currentPage: string,

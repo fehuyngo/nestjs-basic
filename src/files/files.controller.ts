@@ -24,7 +24,7 @@ export class FilesController {
   @Public()
   @Post('upload')
   @ResponseMessage('Upload Single File')
-  @UseInterceptors(FileInterceptor('hoidanit'))
+  @UseInterceptors(FileInterceptor('fileUpload'))
   uploadFile(
     @UploadedFile(
       new ParseFilePipeBuilder()
