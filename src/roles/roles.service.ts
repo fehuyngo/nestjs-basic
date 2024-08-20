@@ -77,7 +77,7 @@ export class RolesService {
       })
     ).populate({
       path: 'permissions',
-      select: { _id: 1, apiPath: 1, name: 1, method: 1 },
+      select: { _id: 1, apiPath: 1, name: 1, method: 1, module: 1 },
     });
   }
 
@@ -86,12 +86,17 @@ export class RolesService {
       throw new BadRequestException('Not Found Role');
     }
 
+    const { name, description, isActive, permissions } = updateRoleDto;
+
     return await this.roleModel.updateOne(
       {
         _id: id,
       },
       {
-        ...updateRoleDto,
+        name,
+        description,
+        isActive,
+        permissions,
         updatedBy: {
           _id: user._id,
           email: user.email,
@@ -101,6 +106,10 @@ export class RolesService {
   }
 
   async remove(id: string, user: IUser) {
+    const foundRole = await this.roleModel.findById(id);
+    if (foundRole.name === 'ADMIN') {
+      throw new BadRequestException('Không thể xóa role ADMIN');
+    }
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Not Found Role');
     }
