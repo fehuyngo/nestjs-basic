@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import { IsEmail, IsMongoId, IsNotEmpty } from 'class-validator';
 import mongoose from 'mongoose';
 
